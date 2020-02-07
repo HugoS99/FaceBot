@@ -4,6 +4,9 @@ import os
 from selenium.webdriver.common.keys import Keys
 from secretsP import loginEmail, password
 from time import sleep
+from urllib.request import (urlretrieve)
+import pathlib
+import string
 
 
 class FaceBot:
@@ -83,3 +86,63 @@ class FaceBot:
 
             self.message(linkList[0])
             googleSearch.quit()
+
+    def send_google_message(self):
+        message = self.lastmessage().strip()
+
+        googleSearch = webdriver.Chrome('../chromedriver.exe')
+        googleSearch.get('https://www.google.com')
+        googleQuery = googleSearch.find_element_by_xpath(
+            '/html/body/div/div[3]/form/div[2]/div[1]/div[1]/div/div[2]/input')
+        googleQuery.send_keys(message)
+        googleQuery.send_keys(Keys.ENTER)
+        googleSearch.find_element_by_xpath('/html/body/div[7]/div[3]/div[4]/div/div/div[1]/div/div/div[1]/div/div[2]/a').click()
+        # sleep(10)
+        # googleSearch.close()
+        images = []
+        imagesResult = googleSearch.find_elements_by_xpath('//img[@class="rg_i Q4LuWd tx8vtf"]')
+
+        for image in imagesResult:
+            images.append(image.get_attribute('src'))
+
+        pathtotempfile=pathlib.Path(__file__).parent.absolute()
+        filename = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
+        filetemp=os.path.join(pathtotempfile, filename)
+        sendimage = self.driver.find_element_by_xpath(
+            '//input[@data-testid=\'photo_input\']')
+        urlretrieve(images[0],filetemp+'.jpg')
+
+        sendimage.send_keys(filetemp+'.jpg')
+        emailin = self.driver.find_element_by_xpath(
+            '/html/body/div[1]/div[3]/div[1]/div/div/div/div[2]/span/div[2]/div[2]/div[2]/div[3]/div[2]/div/div/div[1]/div/div[2]/div/div/div/div')
+        emailin.send_keys('')
+        emailin.send_keys(Keys.ENTER)
+        #os.remove(filetemp+'.jpg')
+        googleSearch.quit()
+        sleep(1)
+        os.remove(filetemp + '.jpg')
+
+    def get_song_lyrics(self):
+        message = self.lastmessage().strip()
+        geniusWebDriver = webdriver.Chrome('../chromedriver.exe')
+        geniusWebDriver.get('https://genius.com/')
+        geniusInput=geniusWebDriver.find_element_by_xpath('/html/body/div[2]/div/div[1]/form/input')
+        geniusInput.send_keys(message)
+        geniusInput.send_keys(Keys.ENTER)
+        sleep(2)
+        temp=geniusWebDriver.find_elements_by_xpath('//mini-song-card/a')
+        temp[1].click()
+        #get lyrics from website
+        sleep(2)
+        result=''
+        liricsf=geniusWebDriver.find_elements_by_xpath('//section//p/*')
+        for liric in liricsf:
+            try:
+                temp=result+' '+liric.text
+                print(temp)
+                result=temp.replace('\n','')
+            except:
+                print('Error on read')
+
+        self.message(result)
+        geniusWebDriver.close()
